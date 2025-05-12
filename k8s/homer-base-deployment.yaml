@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: homer-base
+  labels:
+    app: homer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: homer
+  template:
+    metadata:
+      labels:
+        app: homer
+    spec:
+      securityContext:
+        runAsUser: 1000        
+        runAsGroup: 1000
+        fsGroup: 1000         
+      containers:
+        - name: homer
+          image: your.registry.local/homer-base:latest  # Replace with real image when ready.
+          imagePullPolicy: IfNotPresent
+          args: ["info"]  # Replace when ready
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir:
+            medium: Memory

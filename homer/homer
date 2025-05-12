@@ -1,0 +1,194 @@
+#!/usr/bin/env python3
+
+# homer
+
+
+
+import os
+import sys
+import click
+import importlib
+import pkgutil
+
+from dotenv import set_key
+from homer.utils.logger import get_module_logger, log_with_caller
+from homer.utils.config import load_config, load_raw_config, load_registered_module_envs, validate_registered_module_configs
+from homer.utils.api_client import BaseAPIClient
+from homer.cli_registry import get_registered_clis
+
+logger = get_module_logger()
+
+BANNER = """
+
+HOMER Base CLI — v0.1.0
+HOMER is a modular CLI framework for syncing GitHub, Confluence, Jira, and other platforms.
+HOMER is a work in progress and not yet ready for production use.
+################################################################################
+"""
+
+HELP_HEADER = """
+HOMER is a modular CLI framework for syncing GitHub, Confluence, Jira, and other platforms.
+
+Common Commands:
+  info        Show HOMER version and environment info.
+  check       Run basic environment diagnostics.
+  config      View or modify environment configuration.
+
+To get help with module-specific commands:
+  ./homer.sh ghosthub --help
+  ./homer.sh atlassian --help
+"""
+
+@click.group(
+    invoke_without_command=True,
+    help=HELP_HEADER,
+    context_settings=dict(help_option_names=["-h", "--help"])
+)
+@click.pass_context
+def cli(ctx):
+    if ctx.invoked_subcommand is None:
+        click.echo(BANNER)
+        click.echo("Use `--help` to see available commands.")
+        sys.exit(0)
+
+# ──────────────────────────────────────────────────────────────────────────────
+# INFO
+# ──────────────────────────────────────────────────────────────────────────────
+
+@cli.command()
+def info():
+    """Show HOMER version and environment info."""
+    log_with_caller("info", "🧠 HOMER base CLI active")
+    config = load_raw_config()
+    for k, v in config.items():
+        logger.info(f"{k} = {v}")
+
+# ──────────────────────────────────────────────────────────────────────────────
+# CHECK
+# ──────────────────────────────────────────────────────────────────────────────
+
+@cli.command(help="Check basic API connectivity to an optional URL.")
+@click.option("--url", help="Target base URL to test (e.g. https://httpbin.org).")
+@click.option("--token", help="Optional bearer token for the request.")
+@click.option("--insecure", is_flag=True, help="Disable SSL cert verification.")
+def check(url, token, insecure):
+    """Minimal connectivity check to a specified endpoint."""
+    config = load_config()
+    log_with_caller("info", f"🧠 HOMER is active (env = {config.HOMER_ENV})")
+
+    if not url:
+        logger.info("ℹ️ No --url provided. Skipping API check.")
+        return
+
+    logger.info(f"🌐 Testing connectivity to {url} (verify={not insecure})...")
+    try:
+        client = BaseAPIClient(base_url=url, token=token, verify=not insecure)
+        client.get("/")
+        logger.info("✅ API responded successfully.")
+    except Exception as e:
+        logger.warning(f"⚠️ API check failed: {type(e).__name__} — {e}")
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# CONFIG GROUP
+# ──────────────────────────────────────────────────────────────────────────────
+
+@cli.group(help="View or modify HOMER environment and config values.")
+def config():
+    pass
+
+@config.command("view", help="Print current effective configuration (env + YAML).")
+def config_view():
+    config = load_raw_config()
+    click.echo("🔧 Effective Configuration:")
+    for k, v in config.items():
+        click.echo(f"  {k} = {v}")
+
+@config.command("set", help="Set a configuration key in the .env file.")
+@click.argument("key")
+@click.argument("value")
+def config_set(key, value):
+    dotenv_path = os.getenv("DOTENV_PATH", ".env")
+    if not os.path.exists(dotenv_path):
+        open(dotenv_path, "a").close()
+
+    set_key(dotenv_path, key, value)
+    log_with_caller("info", f"✅ Set {key} = {value} in {dotenv_path}")
+
+@config.command("reset", help="Remove a key from the .env file.")
+@click.argument("key")
+def config_reset(key):
+    dotenv_path = os.getenv("DOTENV_PATH", ".env")
+    if not os.path.exists(dotenv_path):
+        click.echo("⚠️ No .env file found.")
+        return
+
+    lines = []
+    changed = False
+    with open(dotenv_path, "r") as f:
+        for line in f:
+            if not line.strip().startswith(f"{key}="):
+                lines.append(line)
+            else:
+                changed = True
+
+    if changed:
+        with open(dotenv_path, "w") as f:
+            f.writelines(lines)
+        log_with_caller("info", f"🧼 Removed {key} from .env")
+    else:
+        click.echo(f"ℹ️ {key} not found in {dotenv_path}")
+
+# ──────────────────────────────────────────────────────────────────────────────
+# SERVE API
+# ──────────────────────────────────────────────────────────────────────────────
+
+@cli.command("serve-api", help="Launch the HOMER FastAPI server.")
+@click.option("--host", default="0.0.0.0", help="Host interface to bind.")
+@click.option("--port", default=8080, help="Port to run the API on.")
+def serve_api(host, port):
+    """Run the HOMER API server using Uvicorn."""
+    log_with_caller("info", f"🚀 Starting HOMER API server at http://{host}:{port}")
+    import uvicorn
+    uvicorn.run("homer.api.main:app", host=host, port=port, reload=False)
+
+# ──────────────────────────────────────────────────────────────────────────────
+# DYNAMIC MODULE LOADER
+# ──────────────────────────────────────────────────────────────────────────────
+
+# DYNAMIC MODULE + STACK CLI LOADER
+# ──────────────────────────────────────────────────────────────────────────────
+
+def load_module_clis():
+    import homer.modules as modules
+    import homer.stacks as stacks
+
+    # Load module CLIs
+    for _, module_name, _ in pkgutil.iter_modules(modules.__path__):
+        try:
+            importlib.import_module(f"homer.modules.{module_name}.cli")
+        except Exception as e:
+            logger.warning(f"⚠️ Failed to import CLI module '{module_name}': {e}")
+
+    # Load stack CLIs (fix: use 'homer.stacks' as prefix)
+    for _, stack_name, _ in pkgutil.iter_modules(stacks.__path__):
+        try:
+            importlib.import_module(f"homer.stacks.{stack_name}.cli")
+        except Exception as e:
+            logger.warning(f"⚠️ Failed to import CLI stack '{stack_name}': {e}")
+
+    # Register all CLI groups
+    for name, group in get_registered_clis():
+        cli.add_command(group, name=name)
+        logger.info(f"🔌 Loaded CLI module: {name}")
+        
+# ──────────────────────────────────────────────────────────────────────────────
+
+if __name__ == "__main__":
+    # 🔄 Load all module .envs and validate
+    load_registered_module_envs()
+    validate_registered_module_configs()
+
+    # 🔌 Register CLI commands
+    load_module_clis()
+    cli()

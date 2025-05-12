@@ -1,0 +1,12 @@
+click
+requests
+markdown
+PyYAML
+rich
+jinja2
+python-dotenv
+python-dateutil
+pydantic>=2.0
+urllib3
+fastapi
+uvicorn
