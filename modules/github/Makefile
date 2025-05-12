@@ -1,15 +1,11 @@
-# Makefile for building and pushing homer-ghosthub
-VERSION ?= latest
-IMAGE_NAME = homer-github
-DOCKER_REPO = sfddockerhub.corp.blizzard.net/$(IMAGE_NAME)
+# Makefile for building and pushing homer-github
+VERSION ?= github
+DOCKER_REPO = mscrnt/homer
 
 build:
-	docker build -t $(IMAGE_NAME):$(VERSION) -f modules/github/Dockerfile .
-
-tag:
-	docker tag $(IMAGE_NAME):$(VERSION) $(DOCKER_REPO):$(VERSION)
+	docker build -t $(DOCKER_REPO):$(VERSION) -f modules/github/Dockerfile .
 
 push:
 	docker push $(DOCKER_REPO):$(VERSION)
 
-build_and_push: build tag push
+build_and_push: build push
