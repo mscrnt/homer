@@ -15,7 +15,7 @@ It is built with a focus on modularity, composability, and security, ensuring th
 - Build `homer-base` image with:
   - Shared CLI, FastAPI, config loader, and logging
 - Modular layers:
-  - `ghosthub`: GitHub automation
+  - `github`: GitHub automation
   - `atlassian`: Confluence + Jira support
   - `resourcespace`: DAM automation, metadata sync
 - Composable Docker images via `stacks/`
