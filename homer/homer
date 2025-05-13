@@ -153,25 +153,37 @@ def serve_api(host, port):
     uvicorn.run("homer.api.main:app", host=host, port=port, reload=False)
 
 # ──────────────────────────────────────────────────────────────────────────────
-# DYNAMIC MODULE LOADER
-# ──────────────────────────────────────────────────────────────────────────────
-
 # DYNAMIC MODULE + STACK CLI LOADER
 # ──────────────────────────────────────────────────────────────────────────────
 
 def load_module_clis():
-    import homer.modules as modules
-    import homer.stacks as stacks
+    # Try to import modules
+    try:
+        import homer.modules as modules
+        modules_path = modules.__path__
+        logger.debug("📦 Loading module CLIs...")
+    except ImportError:
+        modules_path = []
+        logger.info("ℹ️ No modules directory found. Skipping module CLI loading.")
+
+    # Try to import stacks
+    try:
+        import homer.stacks as stacks
+        stacks_path = stacks.__path__
+        logger.debug("📦 Loading stack CLIs...")
+    except ImportError:
+        stacks_path = []
+        logger.info("ℹ️ No stacks directory found. Skipping stack CLI loading.")
 
     # Load module CLIs
-    for _, module_name, _ in pkgutil.iter_modules(modules.__path__):
+    for _, module_name, _ in pkgutil.iter_modules(modules_path):
         try:
             importlib.import_module(f"homer.modules.{module_name}.cli")
         except Exception as e:
             logger.warning(f"⚠️ Failed to import CLI module '{module_name}': {e}")
 
-    # Load stack CLIs (fix: use 'homer.stacks' as prefix)
-    for _, stack_name, _ in pkgutil.iter_modules(stacks.__path__):
+    # Load stack CLIs
+    for _, stack_name, _ in pkgutil.iter_modules(stacks_path):
         try:
             importlib.import_module(f"homer.stacks.{stack_name}.cli")
         except Exception as e:

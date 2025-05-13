@@ -13,6 +13,6 @@ COPY modules/github/ /homer/modules/github/
 COPY modules/atlassian/ /homer/modules/atlassian/
 
 # Copy stack-specific code
-COPY stacks/homer-github-atlassian/ /homer/stacks/homer-github-atlassian/
+COPY stacks/github-atlassian/ /homer/stacks/github-atlassian/
 
 USER homer
