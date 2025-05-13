@@ -1,7 +1,7 @@
 # File: homer/Dockerfile
 
 # -------- STAGE 1: Builder --------
-    FROM python:3.12-slim-bookworm AS builder
+    FROM python:3.10.17-slim-bookworm AS builder
 
     RUN apt-get update && apt-get install -y --no-install-recommends \
         wget \
@@ -18,7 +18,7 @@
     RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
     
     # -------- STAGE 2: Runtime --------
-    FROM python:3.12-slim-bookworm
+    FROM python:3.10.17-slim-bookworm
     
     RUN apt-get update && apt-get install -y --no-install-recommends \
         sudo \
