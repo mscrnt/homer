@@ -1,6 +1,6 @@
 from pathlib import Path
 from typing import Optional
-from pydantic import BaseModel, HttpUrl
+from pydantic import BaseModel, HttpUrl, SecretStr
 
 from homer.utils.config import register_module_env, write_env_example
 
@@ -11,9 +11,9 @@ from homer.utils.config import register_module_env, write_env_example
 class HomeAssistantEnv(BaseModel):
     """Environment schema for Home Assistant CLI integration."""
 
-    HA_API_URL: HttpUrl
-    HA_API_TOKEN: str
-    HA_WS_URL: str
+    HA_API_URL: Optional[HttpUrl] = None
+    HA_API_TOKEN: Optional[SecretStr] = None
+    HA_WS_URL: Optional[HttpUrl] = None
     HA_ENABLE_CACHE: bool = False
 
 # ──────────────────────────────────────────────────────────────────────────────

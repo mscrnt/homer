@@ -12,6 +12,11 @@ from aiohttp_client_cache.backends.filesystem import FileBackend
 
 
 def get_env(required: bool = False, safe: bool = False) -> Optional[HomeAssistantEnv]:
+    """
+    Load Home Assistant env from os.environ.
+    - If `required=True`, raise if HA_API_URL or HA_API_TOKEN are missing.
+    - If `safe=True`, suppress all validation errors and return None.
+    """
     try:
         env = HomeAssistantEnv(**os.environ)
         if required and (not env.HA_API_URL or not env.HA_API_TOKEN):
@@ -22,14 +27,15 @@ def get_env(required: bool = False, safe: bool = False) -> Optional[HomeAssistan
             return None
         raise
 
+
 def build_client(use_async: bool = False) -> Client:
     """
     Constructs a Home Assistant Client with optional persistent caching.
     """
-    env = get_env()
+    env = get_env(required=True)
 
-    token = env.HA_API_TOKEN.get_secret_value()
-    url = env.HA_API_URL
+    token = str(env.HA_API_TOKEN.get_secret_value())
+    url = str(env.HA_API_URL)
 
     if use_async:
         session = AioCachedSession(

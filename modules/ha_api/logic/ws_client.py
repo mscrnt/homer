@@ -4,26 +4,14 @@ import os
 from homeassistant_api import WebsocketClient, State, Group, Domain, Context
 from homer.utils.logger import get_module_logger
 from modules.ha_api.config import HomeAssistantEnv
-
+from modules.ha_api.client import get_env
 log = get_module_logger("ha_api.ws_client")
 
 
-def get_env(required: bool = False, safe: bool = False) -> Optional[HomeAssistantEnv]:
-    try:
-        env = HomeAssistantEnv(**os.environ)
-        if required and (not env.HA_API_URL or not env.HA_API_TOKEN):
-            raise ValueError("HA_API_URL and HA_API_TOKEN are required but missing.")
-        return env
-    except Exception:
-        if safe:
-            return None
-        raise
-
-
 def _get_ws_client() -> WebsocketClient:
-    env = get_env()
-    if not env.HA_WS_URL:
-        raise RuntimeError("HA_WS_URL must be set to use WebsocketClient.")
+    env = get_env(safe=True)
+    if not env or not env.HA_WS_URL or not env.HA_API_TOKEN:
+        raise RuntimeError("WebSocket client requires HA_WS_URL and HA_API_TOKEN to be set.")
     return WebsocketClient(env.HA_WS_URL, env.HA_API_TOKEN.get_secret_value())
 
 
