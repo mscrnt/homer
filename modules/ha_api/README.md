@@ -14,6 +14,7 @@ It enables scripting, service control, state inspection, and event listening acr
 - 🛠️ CLI for common automation tasks (toggle lights, fire events, read sensors)
 - 🖥️ WebSocket event and trigger listeners
 - 🧾 Logbook, History, and Config fetchers
+- 🧰 Built-in helper commands for smart home debugging
 - 🐳 Docker-ready with `.env` support and caching
 
 ---
@@ -35,7 +36,7 @@ pip install HomeAssistant-API
 Create a `.env` file in `modules/ha_api/` or pass variables into Docker. Required:
 
 ```dotenv
-HA_API_URL=http://192.168.69.11:8123/api/
+HA_API_URL=http://192.168.69.11:8123/api
 HA_API_TOKEN=your_long_lived_access_token
 
 # Optional:
@@ -75,13 +76,31 @@ See `--help` on any command for details.
 
 ---
 
+## 🔧 Helper Commands
+
+To speed up inspection and common queries, the module includes a set of CLI helper commands:
+
+| Command                  | Description                                  |
+| ------------------------ | -------------------------------------------- |
+| `ha_api ping`            | Ping your Home Assistant instance            |
+| `ha_api lights`          | List all `light.*` entities and their states |
+| `ha_api domains`         | List available service domains               |
+| `ha_api components`      | Show all registered HA components            |
+| `ha_api config`          | Print YAML config (name, timezone, version)  |
+| `ha_api log`             | Print the HA error log                       |
+| `ha_api state ENTITY_ID` | Show state + attributes of a single entity   |
+
+These are especially useful for local testing and debugging.
+
+---
+
 ## 🐳 Docker Usage
 
 Run the `ha_api` module with Docker by injecting environment variables:
 
 ```bash
 docker run --rm -it \
-  -e HA_API_URL=http://192.168.69.11:8123/api/ \
+  -e HA_API_URL=http://192.168.69.11:8123/api \
   -e HA_API_TOKEN=your_token \
   mscrnt/homer:ha_api \
   ha_api ping
@@ -105,7 +124,4 @@ This module wraps the amazing [HomeAssistant-API](https://github.com/GrandMoff10
 
 > 📦 [PyPI](https://pypi.org/project/HomeAssistant-API/)
 > 🔗 [GitHub](https://github.com/GrandMoff100/HomeAssistantAPI)
-> License: MIT
-
-We extend it with CLI support, Docker orchestration, and metadata-friendly automation.
-
+> 📖 [Documentation](https://homeassistant-api.readthedocs.io/)
