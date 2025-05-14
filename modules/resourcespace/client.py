@@ -79,10 +79,19 @@ class ResourceSpaceClient:
 # 🔄 Global singleton client and wrappers for API use
 # ──────────────────────────────────────────────────────────────────────────────
 
-client = ResourceSpaceClient()
+# 🔄 Lazy-loaded global client
+_client: Optional["ResourceSpaceClient"] = None  # Forward reference
+
+def get_client() -> "ResourceSpaceClient":
+    """Lazily initialize and return the global ResourceSpaceClient."""
+    global _client
+    if _client is None:
+        from modules.resourcespace.client import ResourceSpaceClient  # Delayed import
+        _client = ResourceSpaceClient()
+    return _client
 
 def call_api(function: str, params: dict = None, method: str = "POST"):
-    return client.call(function, params, method)
+    return get_client().call(function, params, method)
 
 def call_api_multipart(function: str, params: dict, file_path: str):
-    return client.call_multipart(function, params, file_path)
+    return get_client().call_multipart(function, params, file_path)

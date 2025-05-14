@@ -34,6 +34,9 @@ done | sort -u | xargs)
         echo "COPY modules/$module/ /homer/modules/$module/"
     done
     if [[ -n "$REQUIREMENTS" ]]; then
+        echo "USER root"
+        echo "RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*"
+        echo "USER homer"
         echo "RUN pip install $REQUIREMENTS"
     fi
 } > "$LATEST_DOCKERFILE"
