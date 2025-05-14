@@ -2,8 +2,6 @@
 
 This module provides CLI and API support for interacting with a [ResourceSpace](https://www.resourcespace.com/) server, allowing you to automate tasks related to digital asset management including resources, metadata, collections, and more.
 
-> 🔐 This module is used internally by Blizzard’s Archive Team to orchestrate asset workflows across ResourceSpace and integrate with external systems like GitHub, Confluence, and Jira.
-
 ---
 
 ## 🚀 Features
@@ -22,7 +20,7 @@ This module provides CLI and API support for interacting with a [ResourceSpace](
 
 ```bash
 docker run --rm -it \
-  -e RS_API_URL=https://10.130.48.193 \
+  -e RS_API_URL=https://RS_IP \
   -e RS_API_USER=admin \
   -e RS_API_KEY=<your-secret-key> \
   homer-resourcespace:latest \

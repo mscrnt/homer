@@ -35,7 +35,7 @@ Common Commands:
   config      View or modify environment configuration.
 
 To get help with module-specific commands:
-  ./homer.sh ghosthub --help
+  ./homer.sh github --help
   ./homer.sh atlassian --help
 """
 

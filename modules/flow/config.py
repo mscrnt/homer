@@ -1,18 +1,17 @@
-# modules/flow/config.py
 
 
-from pydantic import BaseModel
+from pydantic import BaseModel, HttpUrl
 from pathlib import Path
 from homer.utils.config import register_module_env, write_env_example
 
 # ──────────────────────────────────────────────────────────────────────────────
-# 🧪 Schema for Flow nvironment variables
+# 🧪 Schema for Flow (ShotGrid) environment variables
 # ──────────────────────────────────────────────────────────────────────────────
 
 class FlowEnv(BaseModel):
-    # Confluence
-    CONFLUENCE_API_TOKEN: str | None = None
-
+    SG_SITE: HttpUrl                   # e.g. https://yourstudio.shotgrid.autodesk.com
+    SG_SCRIPT_NAME: str               # Your script name registered in ShotGrid
+    SG_API_KEY: str                   # Your ShotGrid script API key
 
 # ──────────────────────────────────────────────────────────────────────────────
 # 🧩 Register this module's .env file and validation schema

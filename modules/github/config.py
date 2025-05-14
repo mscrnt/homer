@@ -21,7 +21,7 @@ class GithubEnv(BaseModel):
 ENV_PATH = Path(__file__).parent / ".env"
 
 @register_module_env(
-    "ghosthub",
+    "github",
     env_path=str(ENV_PATH),
     schema_cls=GithubEnv
 )

@@ -3,7 +3,7 @@ VERSION ?= flow
 DOCKER_REPO = mscrnt/homer
 
 build:
-	docker build -t $(DOCKER_REPO):$(VERSION) -f modules/github/Dockerfile .
+	docker build -t $(DOCKER_REPO):$(VERSION) -f modules/flow/Dockerfile .
 
 push:
 	docker push $(DOCKER_REPO):$(VERSION)
