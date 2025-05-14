@@ -1,6 +1,6 @@
 # modules/resourcespace/Dockerfile
 
-FROM mscrnt/homer-base:latest
+FROM mscrnt/homer:base
 
 USER root
 
