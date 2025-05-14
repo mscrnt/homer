@@ -100,10 +100,3 @@ modules/
 | `SG_SITE`        | ShotGrid site URL           |
 | `SG_SCRIPT_NAME` | Script name for API access  |
 | `SG_API_KEY`     | API key for the script user |
-
-
----
-
-## 🤝 Contributing
-
-Flow is a core integration point for connecting external pipelines to BARTS and internal tools. Contributions welcome!
