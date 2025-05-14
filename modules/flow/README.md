@@ -2,101 +2,157 @@
 
 The `flow` module integrates HOMER with [ShotGrid (formerly Shotgun)](https://www.autodesk.com/products/shotgrid/overview), enabling automation of asset, task, and metadata workflows using the ShotGrid Python API.
 
-This module is named **Flow** in reference to production pipelines, shot flow, and asset tracking across animation/VFX/game pipelines.
+This module is named **Flow** in reference to production pipelines, shot flow, and asset tracking across animation, VFX, and game workflows.
 
 ---
 
 ## 🔧 Features
 
-- Connect to ShotGrid via API Script
-- Automate asset/task sync or metadata extraction
-- Compose into full HOMER stacks (e.g., `flow-resourcespace`)
-- CLI-ready with support for FastAPI endpoints (optional)
+* ✅ ShotGrid connection test (ping)
+* 📁 Project discovery (list, lookup by name or ID)
+* 🛠️ Full CRUD support for any entity (create, find, update, delete, revive)
+* 🔍 Schema inspection (entity types, field definitions)
+* 📂 Playlist, Shot, Task, Version management
+* 🧠 Activity & automation endpoint support (via API)
+* 🧪 CLI and API co-exist under a unified module
 
 ---
 
 ## 📦 Dependencies
 
-The module installs [ShotGrid Python API v3.8.1](https://github.com/shotgunsoftware/python-api/tree/v3.8.1) directly from GitHub to preserve compatibility and vendored files.
-
-Installed via:
+The module installs [ShotGrid Python API v3.8.1](https://github.com/shotgunsoftware/python-api/tree/v3.8.1) directly from GitHub to preserve compatibility.
 
 ```text
 git+https://github.com/shotgunsoftware/python-api.git@v3.8.1
-````
+```
 
-**Note:** Python 3.10 is required due to ShotGrid compatibility limits.
+✅ Python 3.10 required
 
 ---
 
-## 🐳 Dockerfile
+## 🐳 Docker Support
 
-This module builds on `homer:base` and includes:
+This module is part of the HOMER Docker stack and includes:
 
-* Git client for pulling the API repo
-* ShotGrid API installed via `requirements.txt`
+* Git client for Python API installation
+* ShotGrid CLI + FastAPI support
+* Can be built independently or as part of `mscrnt/homer:latest`
 
 ---
 
 ## 🚀 Usage
 
-### CLI (Coming Soon)
+### CLI
 
+All commands are namespaced under the `flow` group:
 
-### API (Coming Soon)
+```bash
+docker run --rm -it \
+  -e SG_SITE=https://your-team.shotgrid.autodesk.com \
+  -e SG_SCRIPT_NAME=your_script \
+  -e SG_API_KEY=your_key \
+  mscrnt/homer:flow flow --help
+```
 
-FastAPI endpoints for Flow module will be available in a future release.
+#### Core Commands
 
----
+```bash
+flow ping                          # Check ShotGrid connection
+flow crud find ...                # Generic entity queries
+flow crud find-one ...            # Find a single entity
+flow crud create ...              # Create an entity
+flow crud update ...              # Modify entity fields
+flow crud delete ...              # Soft delete
+flow crud revive ...              # Revive deleted
+flow crud summarize ...           # Aggregate stats
+```
 
-## 🧪 Example CLI Entry Point
+#### Tools
 
-```python
-@click.group()
-def flow():
-    """Flow (ShotGrid) module commands."""
-    pass
+```bash
+flow tools list-projects                             # List all projects
+flow tools get-project-id --name "Solo Leveling"     # Look up a project ID by name
+flow tools get-project-name --id 122                 # Look up project name from ID
+```
 
-@flow.command()
-@click.option("--site", required=True)
-@click.option("--script-name", required=True)
-@click.option("--api-key", required=True)
-def ping(site, script_name, api_key):
-    from shotgun_api3 import Shotgun
-    sg = Shotgun(site, script_name, api_key)
-    click.echo(f"✅ Connected to ShotGrid {sg.server_info.get('version')}")
+#### Schema
+
+```bash
+flow schema entities               # List entity types
+flow schema fields --entity Shot   # List fields for entity type
 ```
 
 ---
 
-## 🧩 Integration Plan
+## 📡 API
 
-| Feature                  | Status        |
-| ------------------------ | ------------- |
-| ShotGrid Connection Test | ✅ Done        |
-| Asset Pull + Sync        | ⏳ In Progress |
-| Task/Shot Status Ingest  | ⏳ Planned     |
-| FastAPI Interface        | ⏳ Planned     |
+All routes are registered under `/flow` via FastAPI when running the server:
+
+```bash
+docker run --rm -p 8080:8080 mscrnt/homer:flow serve-api
+```
+
+Then visit:
+
+```
+http://localhost:8080/docs
+```
+
+Example endpoints:
+
+* `GET /flow/ping`
+* `GET /flow/schema/entities`
+* `GET /flow/schema/{entity}/fields`
+* `GET /flow/tools/projects`
+* `GET /flow/tools/project-id?name=Overwatch`
+* `GET /flow/tools/project-name?id=122`
 
 ---
 
-## 📁 Files
+## 🧩 Module Tree
 
 ```
-modules/
-└── flow/
-    ├── cli.py                  # Command-line entry
-    ├── client.py               # ShotGrid wrapper (optional)
-    ├── README.md               # This file
-    └── requirements.txt        # API dependency
+modules/flow/
+├── cli.py                       # Registers main flow CLI group
+├── client.py                    # ShotGrid connection
+├── config.py                    # Env loader + validation
+├── logic/                       # Business logic for all features
+│   ├── actions.py
+│   ├── crud.py
+│   ├── schema.py
+│   ├── tools.py
+│   └── ...
+├── cli_functions/               # CLI entrypoints per command group
+├── routes/                      # FastAPI routers for each area
+├── requirements.txt
+└── README.md
 ```
 
 ---
 
-## 🔐 Env Vars (if needed)
+## 🔐 Environment Variables
 
 | Variable         | Description                 |
 | ---------------- | --------------------------- |
-| `SG_SITE`        | ShotGrid site URL           |
-| `SG_SCRIPT_NAME` | Script name for API access  |
+| `SG_SITE`        | Your ShotGrid site URL      |
+| `SG_SCRIPT_NAME` | Script user name            |
 | `SG_API_KEY`     | API key for the script user |
+
+You can use `.env` to supply these automatically for local testing.
+
+---
+
+## 🧠 Roadmap
+
+| Feature                    | Status        |
+| -------------------------- | ------------- |
+| ShotGrid CLI               | ✅ Complete    |
+| API endpoints              | ✅ Complete    |
+| Playlist + Task automation | ⏳ In Progress |
+| FastAPI webhook support    | 🔜 Planned    |
+
+---
+
+## 🤝 Contributing
+
+This module is essential for connecting HOMER to studio pipeline tools. Feel free to submit issues or feature suggestions via Github.

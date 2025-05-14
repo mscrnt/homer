@@ -1,0 +1,5 @@
+homeassistant_api
+requests-cache
+aiohttp-client-cache
+aiofiles>=0.6.0
+aiosqlite

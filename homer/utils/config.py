@@ -170,3 +170,4 @@ def write_env_example(schema: type[BaseModel], path: Path, include_base: bool = 
 
     path.write_text("\n".join(lines) + "\n")
     log.info(f"📝 Wrote .env.example to {path}")
+ 
