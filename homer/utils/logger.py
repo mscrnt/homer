@@ -32,23 +32,34 @@ def get_logger(name="HOMER", logfile=None, level=None, max_bytes=5 * 1024 * 1024
     )
     logger.addHandler(console_handler)
 
+    # 🛡 Try to set up file logging
+    log_dir = os.getenv("HOMER_LOG_DIR", "logs")
+    try:
+        os.makedirs(log_dir, exist_ok=True)
+    except PermissionError:
+        fallback_log_dir = "/tmp/homer-logs"
+        try:
+            os.makedirs(fallback_log_dir, exist_ok=True)
+            log_dir = fallback_log_dir
+        except Exception:
+            logger.warning(f"⚠️ File logging disabled: unable to create {log_dir} or fallback.")
+            return logger  # Console-only fallback
+
     # 📁 Per-module log file
-    log_dir = "logs"
-    os.makedirs(log_dir, exist_ok=True)
     logfile = logfile or os.path.join(log_dir, f"{name.lower()}.log")
     file_handler = RotatingFileHandler(logfile, maxBytes=max_bytes, backupCount=backup_count, encoding="utf-8")
     file_formatter = logging.Formatter("[%(asctime)s] [%(levelname)s] [%(name)s] %(message)s", "%Y-%m-%d %H:%M:%S")
     file_handler.setFormatter(file_formatter)
     logger.addHandler(file_handler)
 
-    # 📁 Unified HOMER log (skip if this *is* the unified log)
+    # 📁 Unified HOMER log
     if name != "HOMER":
-        unified_handler = RotatingFileHandler(DEFAULT_UNIFIED_LOGFILE, maxBytes=max_bytes, backupCount=backup_count, encoding="utf-8")
+        unified_path = os.path.join(log_dir, "homer.log")
+        unified_handler = RotatingFileHandler(unified_path, maxBytes=max_bytes, backupCount=backup_count, encoding="utf-8")
         unified_handler.setFormatter(file_formatter)
         logger.addHandler(unified_handler)
 
     return logger
-
 
 def get_module_logger(logfile=None, level=None):
     """
