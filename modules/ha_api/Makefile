@@ -1,5 +1,5 @@
-# Makefile for building and pushing homer-flow
-VERSION ?= home_assistant
+# Makefile for building and pushing homer-ha_api
+VERSION ?= ha_api
 DOCKER_REPO = mscrnt/homer
 
 build:
@@ -9,3 +9,4 @@ push:
 	docker push $(DOCKER_REPO):$(VERSION)
 
 build_and_push: build push
+ 
