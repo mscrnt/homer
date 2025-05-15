@@ -1,0 +1,7 @@
+# Add pip requirements here
+# Example:
+# requests
+# numpy
+# pandas
+# matplotlib
+# scikit-learn

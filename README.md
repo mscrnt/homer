@@ -1,198 +1,229 @@
 ![HOMER Logo](./assets/homer-4.png)
 
-# 🧠 HOMER  
+# 🧠 HOMER
+
 **Hub for Orchestrating Metadata, Events, and Resources**
 
-**HOMER** is a modular Python + Docker automation framework built for managing metadata, events, and resources across multiple platforms. It provides a unified CLI and FastAPI interface for seamless integration with various services like GitHub, Atlassian (Confluence + Jira), and ResourceSpace.
-It is designed to be extensible, allowing for easy addition of new modules and stacks as needed.
-It is built with a focus on modularity, composability, and security, ensuring that all logs are structured and secrets are kept isolated.
+**HOMER** is a modular Python + Docker automation framework designed to manage metadata, events, and resource workflows across diverse platforms. It provides a unified CLI and FastAPI interface for seamless integration with systems like GitHub, Confluence, Jira, ResourceSpace, and more.
+
+Built for **modularity**, **composability**, and **security**, HOMER enables teams to orchestrate complex workflows while maintaining structured logging and isolated secrets.
 
 ---
 
 ## 🚀 Project Goals
 
 ### ✅ MVP
-- Build `homer-base` image with:
-  - Shared CLI, FastAPI, config loader, and logging
-- Modular layers:
-  - `github`: GitHub automation
-  - `atlassian`: Confluence + Jira support
-  - `resourcespace`: DAM automation, metadata sync
-- Composable Docker images via `stacks/`
-- Support CLI tooling, FastAPI service mode, and webhooks
+
+* Build a `homer-base` image with:
+
+  * Shared CLI, FastAPI, config loader, and structured logging
+* Modular layers:
+
+  * `github`: GitHub automation
+  * `atlassian`: Confluence + Jira support
+  * `resourcespace`: DAM sync and ingestion
+* Composable Docker stacks defined in `stacks/`
+* Support CLI tooling, FastAPI services, and webhook triggers
 
 ### 🛠️ Future Capabilities
-- Add support for Slack, Teams, Notion, Miro
-- Support cron-based + webhook triggers
-- Enable chatbot-style archive queries
-- Keep secrets isolated and logs fully structured
+
+* Add modules for Slack, Teams, Notion, and Miro
+* Enable cron-based or event-driven automation
+* Support chatbot-style archive queries
+* Maintain structured logs and secure secrets injection
 
 ---
 
 ## 🧱 Architecture Overview
 
-HOMER is layered and declarative:
+HOMER is **layered and declarative**:
 
-- 🧩 **Modules** — `modules/github`, `modules/atlassian`, `modules/resourcespace`, etc.
-- 🧱 **Stacks** — e.g. `homer-github-atlassian`, combining modules
-- 💻 **CLI** — Powered by `Click` and `@register_cli(...)`
-- ⚡ **FastAPI** — Auto-detects and mounts all registered module APIs
-- 🎯 **Entrypoint** — Smart detection: CLI vs API/daemon
+* 🧩 **Modules** — Located under `modules/`; copied into `homer/modules/` at build
+* 🧱 **Stacks** — Layered task images built from `stacks/`; copied into `homer/stacks/`
+* 💻 **CLI** — Powered by `Click` + `@register_cli(...)`
+* ⚡ **FastAPI** — Auto-registers with `@register_api(...)`
+* 🎯 **Entrypoint** — Smart detection of CLI, API, or daemon mode via `entrypoint.py`
 
 ---
 
 ## 📁 Folder Structure
 
 ```text
-homer/
-├── homer/                         
-│   ├── api/                       # FastAPI + dynamic loading
-│   ├── utils/                     # Logger, config, HTTP client
-│   ├── modules/                  
-│   │   ├── github/              # GitHub sync
-│   │   ├── atlassian/             # Confluence + Jira
-│   │   └── resourcespace/         # DAM tools via ResourceSpace
-│   ├── stacks/                   # Stack-specific logic (e.g. GitHub + Jira sync)
-│   ├── cli_registry.py           # CLI decorator system
-│   ├── entrypoint.py             # Entry router (CLI, daemon, etc)
-│   └── homer                     # CLI script
-├── modules/                      # Dockerfiles for composed modules
-├── stacks/                       # Dockerfiles for composed stacks
-├── requirements.txt
-├── Dockerfile                    # Base image
-└── assets/
-````
+.
+├── build_and_push_all.sh             # Build script for base/modules/stacks
+├── README.md
+├── Dockerfile                        # Base image (homer-base)
+├── homer/
+│   ├── api/                          # FastAPI core
+│   ├── modules/                      # Populated at build
+│   ├── stacks/                       # Populated at build
+│   ├── utils/                        # Logging, config, decorators
+│   ├── cli_registry.py               # CLI registration logic
+│   ├── entrypoint.py                 # CLI/API launcher
+│   ├── homer                         # CLI runner script
+│   ├── Makefile                      # Make targets for builds
+│   ├── requirements.txt              # Base dependencies
+│   └── .env.example                  # Base-level env vars
+├── modules/                          # Source modules (copied into image)
+│   ├── github/
+│   ├── atlassian/
+│   ├── resourcespace/
+│   ├── netbox/
+│   ├── ha_api/
+│   └── flow/
+├── stacks/                           # Stack Dockerfiles
+│   ├── github-atlassian/
+│   └── homer-latest/                # Dynamically generated with all modules
+├── examples/
+│   ├── modules/                      # Module template
+│   │   └── Dockerfile
+│   └── stacks/                       # Stack template
+│       └── Dockerfile
+```
+
+> `homer/modules/` and `homer/stacks/` are empty in the repo and **populated dynamically during Docker build**.
+
+---
 
 ## 🧠 Dynamic CLI + API Registration
 
-### CLI Modules
+HOMER uses decorators for auto-registration:
 
 ```python
-# modules/resourcespace/cli.py
-@register_cli("resourcespace")
+# cli.py
+@register_cli("example")
 @click.group()
 def cli(): ...
-```
 
-### FastAPI Modules
-
-```python
-# modules/resourcespace/api.py
+# api.py
 @register_api
-class ResourceSpaceAPI(HomerAPI): ...
+class ExampleAPI(HomerAPI): ...
 ```
+
+Each module should expose a CLI command group and (optionally) an API handler.
 
 ---
 
-## 🐳 Entrypoint Behavior
+## 🐳 Docker Image Design
 
-`entrypoint.py` smartly switches modes:
+All modules and stacks are built from the same base:
 
-| Behavior                  | Example                                           |
-| ------------------------- | ------------------------------------------------- |
-| 🧠 Run CLI                | `docker run homer-base github fetch --repo ...` |
-| 🚀 Serve FastAPI          | `docker run -p 4242:4242 homer-base`              |
-| 🔄 Launch workers/daemons | *(future release)*                                |
+```dockerfile
+FROM mscrnt/homer:base
+```
+
+Resulting images are tagged as:
+
+```
+mscrnt/homer:<module>
+mscrnt/homer:<stack>
+```
+
+The final `homer:latest` image includes **all available modules**.
 
 ---
 
-## 📦 Stack Docker Example
+## 🏗️ Building and Publishing Images
 
-### `stacks/homer-github-atlassian/Dockerfile`
-
-```Dockerfile
-FROM homer-base
-
-USER root
-
-# Install Python deps
-COPY modules/github/requirements.txt /tmp/github.txt
-COPY modules/atlassian/requirements.txt /tmp/atlassian.txt
-RUN pip install --no-cache-dir -r /tmp/github.txt -r /tmp/atlassian.txt
-
-# Copy modules and stack code
-COPY modules/github/ /homer/modules/github/
-COPY modules/atlassian/ /homer/modules/atlassian/
-COPY stacks/homer-github-atlassian/ /homer/stacks/homer-github-atlassian/
-
-USER homer
-```
+Use the provided script to build everything:
 
 ```bash
-docker build -t homer-github-atlassian -f stacks/homer-github-atlassian/Dockerfile .
+./build_and_push_all.sh
 ```
+
+This script will:
+
+* Build `mscrnt/homer:base`
+* Build each module in `modules/`
+* Create a combined `homer:latest` image with all modules
+* Build all defined stacks except `homer-latest`
+* Push all images to the registry
 
 ---
 
 ## 💻 CLI Usage
 
 ```bash
-# ResourceSpace CLI examples
-./homer resourcespace resource get-resource-info --id 123
-./homer resourcespace metadata update-field --resource-id 123 --field-id 12 --value "Production Ready"
-./homer resourcespace collection create-collection --name "Upload Bucket"
-
-# Stack-based command
-./homer docsync sync-docs --repo sfd/docs
+# Local CLI
+./homer <module> <command> [args]
 
 # Docker CLI
 docker run --rm \
-  -e RS_API_URL=http://10.130.48.193 \
-  -e RS_API_USER=admin \
-  -e RS_API_KEY=b0f9c323f... \
-  homer-resourcespace resourcespace system get-system-status
+  -e HOMER_ENV=production \
+  mscrnt/homer:<module> <module> <command>
 ```
 
 ---
 
-## 🌐 API Examples
-
-### Health check
+## 🌐 API Usage
 
 ```bash
-curl http://localhost:4242/resourcespace/ping
+# Generic health check
+curl http://localhost:4242/<module>/ping
 ```
 
 ---
 
-## 🔐 Environment Variables
+## 🔐 Base Environment Variables
 
-| Key                    | Description                |
-| ---------------------- | -------------------------- |
-| `GH_TOKEN`             | GitHub token               |
-| `REPO_URL`             | Target repo URL (for automation)      |
-| `CONFLUENCE_API_TOKEN` | Confluence API token       |
-| `CONFLUENCE_SPACE_KEY` | Space key                  |
-| `CONFLUENCE_API_URL`   | Optional override for Confluence API  |
-| `JIRA_API_TOKEN`       | Jira token                 |
-| `JIRA_PROJECT_KEY`     | Jira project key                      |
-| `RS_API_URL`           | ResourceSpace API base URL |
-| `RS_API_USER`          | ResourceSpace username     |
-| `RS_API_KEY`           | ResourceSpace private key  |
+These base variables apply to all builds:
+
+| Variable      | Description                                                |
+| ------------- | ---------------------------------------------------------- |
+| `HOMER_ENV`   | Runtime environment (default: `development`)               |
+| `LOG_LEVEL`   | Logging level (`INFO`, `DEBUG`, etc.)                      |
+| `CONFIG_PATH` | Path to shared config file (default: `config/config.yaml`) |
+
+> Module-specific environment variables are documented within each module's README.
 
 ---
 
 ## 🧩 Available Modules
 
-| Module          | Description                                |
-| --------------- | ------------------------------------------ |
-| `github`        | GitHub sync: markdown, workflows, metadata |
-| `atlassian`     | Confluence + Jira metadata publishing      |
-| `resourcespace` | DAM workflows: resources, metadata, search |
-| `slack`         | *(Planned)* Slack alerts + automation      |
-| `miro`          | *(Planned)* Whiteboard + planning sync     |
+| Module          | Description                              |
+| --------------- | ---------------------------------------- |
+| `github`        | GitHub repo automation and syncing       |
+| `atlassian`     | Confluence + Jira integration            |
+| `resourcespace` | DAM metadata automation                  |
+| `ha_api`        | Home Assistant integration               |
+| `netbox`        | NetBox DCIM/IPAM connector               |
+| `flow`          | Automation routing and conditional logic |
+
+---
+
+## 🧪 Creating a New Module
+
+To scaffold your own module:
+
+```bash
+cp -r examples/modules modules/<your_module>
+```
+
+Each module should contain:
+
+```text
+cli.py
+api.py
+client.py
+config.py
+requirements.txt
+Dockerfile
+Makefile
+README.md
+```
+
+You must define either a CLI or API entrypoint (or both) using the provided decorator patterns.
 
 ---
 
 ## 🧠 HOMER Philosophy
 
-* **Modular** – Add/remove CLI/API modules independently
-* **Composable** – Stack Dockerfiles to bundle workflows
-* **Transparent** – All logs are structured per module
-* **Secure** – Secrets via `.env` or environment only
-* **Extensible** – CLI + API + workers in one architecture
+* **Modular** – Each module is self-contained and independently testable
+* **Composable** – Stack modules as needed into tailored automation images
+* **Transparent** – Logs everything with full context and structure
+* **Secure** – No secrets in code; use `.env` or CI secrets
+* **Extensible** – Add CLI, API, and daemon tasks easily across any platform
 
 ---
 
 © Mscrnt, LLC – 2025
-
