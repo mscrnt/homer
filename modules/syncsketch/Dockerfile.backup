@@ -1,0 +1,10 @@
+FROM mscrnt/homer:base
+
+# Copy SyncSketch module
+COPY . /homer/modules/syncsketch/
+
+# Install SyncSketch-specific dependencies
+RUN pip install -r /homer/modules/syncsketch/requirements.txt
+
+# Set working directory
+WORKDIR /homer

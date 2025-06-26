@@ -6,6 +6,31 @@ BASE_TAG=${1:-base}
 LATEST_DOCKERFILE="stacks/homer-latest/Dockerfile"
 LATEST_STACK_DIR="stacks/homer-latest"
 
+# Get script directory
+SCRIPT_DIR=$(dirname "${BASH_SOURCE[0]}")
+PROJECT_ROOT=$(cd "$SCRIPT_DIR" && pwd)
+
+echo "🚀 HOMER Build and Push Pipeline"
+echo "================================"
+
+# Run pre-build validation
+echo "🔍 Running pre-build validation..."
+if [[ -f "$PROJECT_ROOT/scripts/pre-build-check.sh" ]]; then
+    chmod +x "$PROJECT_ROOT/scripts/pre-build-check.sh"
+    if ! "$PROJECT_ROOT/scripts/pre-build-check.sh"; then
+        echo "❌ Validation failed. Attempting automatic fixes..."
+        if ! "$PROJECT_ROOT/scripts/pre-build-check.sh" --fix; then
+            echo "🚨 Could not fix all issues automatically. Please fix manually and try again."
+            exit 1
+        fi
+        echo "✅ Issues fixed. Continuing with build..."
+    fi
+else
+    echo "⚠️  Pre-build validation script not found. Continuing without validation..."
+fi
+
+echo
+
 echo "🔨 Building and pushing homer:$BASE_TAG"
 make -f homer/Makefile build_and_push VERSION=$BASE_TAG
 

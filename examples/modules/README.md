@@ -114,27 +114,56 @@ class ExampleAPI(HomerAPI):
 ## 🧪 Local Testing
 
 ```bash
+# Validate module structure
+make validate-module MODULE=example
+
 # Run CLI manually
 python homer/homer example ping
 
 # Run API locally
 uvicorn homer.api.main:app --reload
+
+# Build and test
+make build-module MODULE=example
 ```
 
 ---
 
 ## 🐳 Docker Build
 
+Best practice Dockerfile pattern:
+
 ```dockerfile
 # Dockerfile
 FROM mscrnt/homer:base
-COPY . /homer/modules/example/
-RUN pip install -r /homer/modules/example/requirements.txt
+
+USER root
+
+# Install system dependencies if needed
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+ && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies (for better layer caching)
+COPY modules/example/requirements.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
+
+# Copy module code
+COPY modules/example/ /homer/modules/example/
+
+USER homer
 ```
 
-To build and tag:
+To build and validate:
 
 ```bash
+# Validate first (recommended)
+make validate-module MODULE=example
+
+# Build
+make build-module MODULE=example
+
+# Or manually
 docker build -t mscrnt/homer:example .
 ```
 

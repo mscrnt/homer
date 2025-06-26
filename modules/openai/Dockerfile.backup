@@ -1,0 +1,10 @@
+FROM mscrnt/homer:base
+
+# Copy OpenAI module
+COPY . /homer/modules/openai/
+
+# Install OpenAI-specific dependencies
+RUN pip install -r /homer/modules/openai/requirements.txt
+
+# Set working directory
+WORKDIR /homer

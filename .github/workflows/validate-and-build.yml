@@ -1,0 +1,159 @@
+name: Validate and Build HOMER
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  REGISTRY: mscrnt
+  
+jobs:
+  validate:
+    name: Validate Project Structure
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Make scripts executable
+      run: chmod +x scripts/*.sh
+      
+    - name: Run validation
+      run: ./scripts/pre-build-check.sh
+      
+    - name: Fix issues automatically
+      if: failure()
+      run: |
+        echo "Validation failed, attempting automatic fixes..."
+        ./scripts/pre-build-check.sh --fix
+        
+    - name: Re-validate after fixes
+      if: failure()
+      run: ./scripts/pre-build-check.sh
+
+  build-base:
+    name: Build Base Image
+    runs-on: ubuntu-latest
+    needs: validate
+    if: success()
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Log in to Docker Hub
+      if: github.event_name != 'pull_request'
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        
+    - name: Build base image
+      run: |
+        cd homer
+        docker build -t ${{ env.REGISTRY }}/homer:base .
+        
+    - name: Push base image
+      if: github.event_name != 'pull_request'
+      run: docker push ${{ env.REGISTRY }}/homer:base
+
+  build-modules:
+    name: Build Modules
+    runs-on: ubuntu-latest
+    needs: [validate, build-base]
+    if: success()
+    
+    strategy:
+      matrix:
+        module: [
+          atlassian,
+          discord, 
+          flow,
+          github,
+          ha_api,
+          netbox,
+          openai,
+          perforce,
+          resourcespace,
+          slack,
+          syncsketch
+        ]
+      fail-fast: false
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Log in to Docker Hub
+      if: github.event_name != 'pull_request'
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        
+    - name: Validate module
+      run: ./scripts/validate-module.sh modules/${{ matrix.module }}
+      
+    - name: Build module
+      run: |
+        cd modules/${{ matrix.module }}
+        make build
+        
+    - name: Push module
+      if: github.event_name != 'pull_request'
+      run: |
+        cd modules/${{ matrix.module }}
+        make push
+
+  build-stacks:
+    name: Build Stacks
+    runs-on: ubuntu-latest
+    needs: [validate, build-modules]
+    if: success()
+    
+    strategy:
+      matrix:
+        stack: [
+          github-atlassian,
+          perforce-openai,
+          slack-syncsketch
+        ]
+      fail-fast: false
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Log in to Docker Hub
+      if: github.event_name != 'pull_request'
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        
+    - name: Validate stack
+      run: ./scripts/validate-stack.sh stacks/${{ matrix.stack }}
+      
+    - name: Build stack
+      run: |
+        cd stacks/${{ matrix.stack }}
+        make build
+        
+    - name: Push stack
+      if: github.event_name != 'pull_request'
+      run: |
+        cd stacks/${{ matrix.stack }}
+        make push

@@ -14,13 +14,38 @@ log = get_module_logger("discord.runner")
 _instance = None
 
 
+async def start_bot(token: str):
+    """Start the Discord bot with the given token."""
+    global _instance
+    
+    try:
+        bot = get_discord_bot()
+        await load_all_cogs(bot)
+        _instance = bot
+        log.info("🤖 Running as commands.Bot...")
+        await bot.start(token)
+    except Exception as e:
+        log.exception("❌ Failed to start Discord bot")
+        raise
+
+async def start_client(token: str):
+    """Start the Discord client with the given token."""
+    global _instance
+    
+    try:
+        client = get_discord_client()
+        _instance = client
+        log.info("📡 Running as discord.Client...")
+        await client.start(token)
+    except Exception as e:
+        log.exception("❌ Failed to start Discord client")
+        raise
+
 async def run_discord(mode: str = "bot"):
     """
     Launch the Discord bot or client with proper config and cog loading.
     Can be reused from CLI or API context.
     """
-    global _instance
-
     # Check token
     token = os.getenv("DISCORD_BOT_TOKEN")
     if not token:
@@ -28,18 +53,9 @@ async def run_discord(mode: str = "bot"):
 
     # Select client mode
     if mode == "bot":
-        bot = get_discord_bot()
-        await load_all_cogs(bot)
-        _instance = bot
-        log.info("🤖 Running as commands.Bot...")
-        await bot.start(token)
-
+        await start_bot(token)
     elif mode == "client":
-        client = get_discord_client()
-        _instance = client
-        log.info("📡 Running as discord.Client...")
-        await client.start(token)
-
+        await start_client(token)
     else:
         raise ValueError(f"Unsupported DISCORD_MODE: {mode}")
 

@@ -50,9 +50,20 @@ HOMER is **layered and declarative**:
 
 ```text
 .
-├── build_and_push_all.sh             # Build script for base/modules/stacks
+├── build_and_push_all.sh             # Build script with validation
+├── Makefile                          # Project-wide build targets
 ├── README.md
-├── Dockerfile                        # Base image (homer-base)
+├── VALIDATION_REPORT.md              # Validation system documentation
+├── .github/
+│   └── workflows/
+│       └── validate-and-build.yml    # CI/CD with validation
+├── scripts/                          # Validation and automation scripts
+│   ├── validate-module.sh            # Module structure validation
+│   ├── validate-stack.sh             # Stack validation
+│   ├── fix-module-structure.sh       # Auto-fix common issues
+│   ├── pre-build-check.sh            # Comprehensive validation
+│   ├── validate-all.sh               # Legacy validation
+│   └── README.md                     # Scripts documentation
 ├── homer/
 │   ├── api/                          # FastAPI core
 │   ├── modules/                      # Populated at build
@@ -65,20 +76,25 @@ HOMER is **layered and declarative**:
 │   ├── requirements.txt              # Base dependencies
 │   └── .env.example                  # Base-level env vars
 ├── modules/                          # Source modules (copied into image)
-│   ├── github/
-│   ├── atlassian/
-│   ├── resourcespace/
-│   ├── netbox/
-│   ├── ha_api/
-│   └── flow/
-├── stacks/                           # Stack Dockerfiles
-│   ├── github-atlassian/
-│   └── homer-latest/                # Dynamically generated with all modules
+│   ├── atlassian/                    # Confluence + Jira integration
+│   ├── discord/                      # Discord bot integration
+│   ├── flow/                         # Automation routing and logic
+│   ├── github/                       # GitHub automation
+│   ├── ha_api/                       # Home Assistant integration
+│   ├── netbox/                       # NetBox DCIM/IPAM connector
+│   ├── openai/                       # OpenAI API integration
+│   ├── perforce/                     # Perforce version control
+│   ├── resourcespace/                # DAM metadata automation
+│   ├── slack/                        # Slack integration
+│   └── syncsketch/                   # Creative review workflows
+├── stacks/                           # Composable Docker stacks
+│   ├── github-atlassian/             # GitHub + Atlassian workflow
+│   ├── perforce-openai/              # AI-powered code analysis
+│   ├── slack-syncsketch/             # Creative workflow notifications
+│   └── homer-latest/                 # Auto-generated all-modules stack
 ├── examples/
-│   ├── modules/                      # Module template
-│   │   └── Dockerfile
-│   └── stacks/                       # Stack template
-│       └── Dockerfile
+│   ├── modules/                      # Module template and documentation
+│   └── stacks/                       # Stack template and documentation
 ```
 
 > `homer/modules/` and `homer/stacks/` are empty in the repo and **populated dynamically during Docker build**.
@@ -125,19 +141,64 @@ The final `homer:latest` image includes **all available modules**.
 
 ## 🏗️ Building and Publishing Images
 
-Use the provided script to build everything:
+### Quick Start
+
+Use the Makefile for validated builds:
 
 ```bash
-./build_and_push_all.sh
+# Validate and build everything (recommended)
+make build
+
+# Just validate without building
+make validate
+
+# Validate with auto-fixes
+make validate-fix
+
+# Build specific module
+make build-module MODULE=openai
+
+# Build specific stack
+make build-stack STACK=perforce-openai
 ```
 
-This script will:
+### Advanced Building
 
-* Build `mscrnt/homer:base`
-* Build each module in `modules/`
-* Create a combined `homer:latest` image with all modules
-* Build all defined stacks except `homer-latest`
-* Push all images to the registry
+Use the build script directly:
+
+```bash
+# Build with validation (default)
+./build_and_push_all.sh
+
+# Skip validation (not recommended)
+./build_and_push_all.sh --no-validate
+```
+
+### Validation First (Recommended)
+
+Before building, run validation to catch issues:
+
+```bash
+# Quick validation
+./scripts/pre-build-check.sh
+
+# Validation with auto-fixes
+./scripts/pre-build-check.sh --fix
+
+# Validate specific component
+./scripts/validate-module.sh modules/openai
+./scripts/validate-stack.sh stacks/perforce-openai
+```
+
+The build process will:
+
+* **Validate** all modules and stacks
+* **Auto-fix** common issues (with `--fix` flag)
+* **Build** `mscrnt/homer:base`
+* **Build** each module in `modules/`
+* **Create** a combined `homer:latest` image with all modules
+* **Build** all defined stacks
+* **Push** all images to the registry
 
 ---
 
@@ -180,39 +241,147 @@ These base variables apply to all builds:
 
 ## 🧩 Available Modules
 
-| Module          | Description                              |
-| --------------- | ---------------------------------------- |
-| `github`        | GitHub repo automation and syncing       |
-| `atlassian`     | Confluence + Jira integration            |
-| `resourcespace` | DAM metadata automation                  |
-| `ha_api`        | Home Assistant integration               |
-| `netbox`        | NetBox DCIM/IPAM connector               |
-| `flow`          | Automation routing and conditional logic |
+| Module          | Description                              | Status |
+| --------------- | ---------------------------------------- | ------ |
+| `atlassian`     | Confluence + Jira integration            | ✅ Ready |
+| `discord`       | Discord bot and webhook integration      | ✅ Ready |
+| `flow`          | Automation routing and conditional logic | ✅ Ready |
+| `github`        | GitHub repo automation and syncing       | ✅ Ready |
+| `ha_api`        | Home Assistant integration               | ✅ Ready |
+| `netbox`        | NetBox DCIM/IPAM connector               | ✅ Ready |
+| `openai`        | OpenAI API integration for AI workflows  | ✅ Ready |
+| `perforce`      | Perforce version control integration     | ✅ Ready |
+| `resourcespace` | DAM metadata automation                  | ✅ Ready |
+| `slack`         | Slack messaging and workflow integration | ✅ Ready |
+| `syncsketch`    | Creative review and collaboration tools  | ✅ Ready |
+
+## 🧱 Available Stacks
+
+| Stack               | Modules              | Description                        | Status |
+| ------------------- | -------------------- | ---------------------------------- | ------ |
+| `github-atlassian`  | github + atlassian   | Development workflow automation    | ✅ Ready |
+| `perforce-openai`   | perforce + openai    | AI-powered code analysis           | ✅ Ready |
+| `slack-syncsketch`  | slack + syncsketch    | Creative workflow notifications    | ✅ Ready |
+| `homer-latest`      | all modules          | Complete HOMER installation       | ✅ Auto-generated |
 
 ---
 
 ## 🧪 Creating a New Module
 
-To scaffold your own module:
+### 1. Scaffold from Template
 
 ```bash
+# Copy the example module
 cp -r examples/modules modules/<your_module>
+
+# Fix structure and validate
+./scripts/fix-module-structure.sh modules/<your_module>
+make validate-module MODULE=<your_module>
 ```
 
-Each module should contain:
+### 2. Required Files
+
+Each module must contain:
 
 ```text
-cli.py
-api.py
-client.py
-config.py
-requirements.txt
-Dockerfile
-Makefile
-README.md
+├── __init__.py                 # Python package marker
+├── api.py                      # FastAPI routes with @register_api
+├── cli.py                      # CLI commands with @register_cli
+├── client.py                   # API client/wrapper logic
+├── config.py                   # Configuration management
+├── requirements.txt            # Python dependencies
+├── Dockerfile                  # Container build instructions
+├── Makefile                    # Build targets
+├── README.md                   # Module documentation
+├── cli_functions/              # CLI helper functions
+│   └── __init__.py
+├── logic/                      # Core business logic
+│   └── __init__.py
+└── routes/                     # API route implementations
+    └── __init__.py
 ```
 
-You must define either a CLI or API entrypoint (or both) using the provided decorator patterns.
+### 3. Development Workflow
+
+```bash
+# 1. Create module structure
+make validate-module MODULE=<your_module>
+
+# 2. Implement functionality
+# Edit api.py, cli.py, client.py, etc.
+
+# 3. Test locally
+make build-module MODULE=<your_module>
+
+# 4. Validate before commit
+make validate-fix
+```
+
+### 4. Required Decorators
+
+You must use these decorators for auto-registration:
+
+```python
+# cli.py
+@register_cli("your_module")
+@click.group()
+def cli():
+    """Your module CLI"""
+    pass
+
+# api.py  
+@register_api
+class YourModuleAPI(HomerAPI):
+    """Your module API"""
+    
+    def get(self, path: str = "/ping"):
+        return {"status": "ok", "module": "your_module"}
+```
+
+---
+
+## 🔍 Validation & CI/CD
+
+HOMER includes comprehensive validation to prevent build failures and ensure consistency:
+
+### Validation Tools
+
+- **`scripts/validate-module.sh`** - Validates individual module structure
+- **`scripts/validate-stack.sh`** - Validates stack configuration  
+- **`scripts/fix-module-structure.sh`** - Auto-fixes common issues
+- **`scripts/pre-build-check.sh`** - Comprehensive validation with auto-fix
+
+### GitHub Actions
+
+Automated CI/CD pipeline at `.github/workflows/validate-and-build.yml`:
+
+1. **Validates** all modules and stacks
+2. **Auto-fixes** issues when possible
+3. **Builds** base image, modules, and stacks in parallel
+4. **Pushes** images to registry (main branch only)
+
+### Pre-commit Validation
+
+Prevent issues before they reach CI:
+
+```bash
+# Quick check
+make validate
+
+# Fix and validate
+make validate-fix
+
+# Check specific component
+make validate-module MODULE=openai
+```
+
+### Common Validations
+
+- ✅ Required files and directories present
+- ✅ Python decorators (`@register_cli`, `@register_api`)
+- ✅ Dockerfile best practices (layer caching, security)
+- ✅ Dependencies properly declared
+- ✅ Module/stack integration compatibility
 
 ---
 

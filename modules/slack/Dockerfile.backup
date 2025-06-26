@@ -1,0 +1,10 @@
+FROM mscrnt/homer:base
+
+# Copy Slack module
+COPY . /homer/modules/slack/
+
+# Install Slack-specific dependencies
+RUN pip install -r /homer/modules/slack/requirements.txt
+
+# Set working directory
+WORKDIR /homer
